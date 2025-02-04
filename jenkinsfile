@@ -4,8 +4,8 @@ pipeline {
       environment {
          registryCredential = 'gitali'
          registryCredentialAli = 'containerali'
-         registry = 'registry-intl.ap-southeast-1.aliyuncs.com/gandes-test/gandes-repo'
-         registryUrl = 'registry-intl-vpc.ap-southeast-1.aliyuncs.com/gandes-test/gandes-repo'
+         registry = 'registry-intl.ap-southeast-5.aliyuncs.com/gandes-test/gandes-repo'
+         registryUrl = 'registry-intl-vpc.ap-southeast-5.aliyuncs.com/gandes-test/gandes-repo'
          dockerImage = ''
       }
    options {
