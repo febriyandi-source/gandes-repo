@@ -1,6 +1,5 @@
-FROM ubuntu:latest
-MAINTAINER febriyandi
-RUN apt install httpd
-COPY index.html /var/www/html/
-CMD ["/usr/sbin/httpd", "-D", "FOREGROUND"]
-EXPOSE 80
+FROM nginx:stable-alpine3.17-slim
+COPY index.html /usr/share/nginx/html
+
+EXPOSE 80 
+CMD ["nginx", "-g", "daemon off;"]
