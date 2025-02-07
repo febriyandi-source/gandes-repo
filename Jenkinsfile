@@ -23,8 +23,8 @@ pipeline {
                 script {
                     // Use Jenkins credentials to login to ACR
                     withCredentials([usernamePassword(credentialsId: 'alibaba-cloud-credentials', 
-                                                      usernameVariable: 'febriyandi@testindonet', 
-                                                      passwordVariable: 'R4h4s1ah2017&*')]) {
+                                                      usernameVariable: 'ACR_USERNAME', 
+                                                      passwordVariable: 'ACR_PASSWORD')]) {
                         sh """
                             echo "Logging into Alibaba Cloud Container Registry..."
                             docker login --username ${ACR_USERNAME} --password ${ACR_PASSWORD} ${ACR_REGISTRY}
