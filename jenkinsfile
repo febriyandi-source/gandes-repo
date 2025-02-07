@@ -1,50 +1,36 @@
-{
 pipeline {
-   agent any
-      environment {
-         registryCredential = 'gitali'
-         registryCredentialAli = 'containerali'
-         registry = 'registry-intl-vpc.ap-southeast-5.aliyuncs.com/gandes-test/gandes-repo'
-         registryUrl = 'https://registry-intl-vpc.ap-southeast-5.aliyuncs.com/gandes-test/gandes-repo'
-         dockerImage = ''
-      }
-   options {
-      skipDefaultCheckout(true)
-   }
-   stages {
-      stage('Checkout SCM') {
-         steps {
-            echo '> Checking out the source control ...'
-            checkout scm
-         }
-      }
-      stage('List Git Files') {
-         steps {
-            echo '> List the File ...'
-            sh 'ls -l'    
-         }
-      }
-      stage('Build') {
-         steps {
-           echo '> Build Image ...'
-           script {
-               dockerImage = docker.build registry + ":$BUILD_NUMBER"
-           }
-         }
-      }
-      stage('Deploy Image') {
-         steps{
-            script {
-               docker.withRegistry( registryUrl, registryCredentialAli) {
-               dockerImage.push()
-               }
+    agent any
+
+    environment {
+        DOCKER_REGISTRY = 'registry-intl.ap-southeast-5.aliyuncs.com'
+        DOCKER_NAMESPACE = 'gandes-test'
+        IMAGE_NAME = 'build-from-jenkins'
+        IMAGE_TAG = 'latest'
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                git 'https://github.com/febriyandi-source/gandes-repo.git'
             }
-         }
-      }
-      stage('Remove Unused docker image') {
-         steps{
-           sh "docker rmi -f $registry:$BUILD_NUMBER"
-         }
-      }
-   }
-}
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    sh "docker build -t ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/${IMAGE_NAME}:${IMAGE_TAG} ."
+                }
+            }
+        }
+
+        stage('Push to ACR') {
+            steps {
+                script {
+                    withCredentials([usernamePassword(credentialsId: '63762d50-93fa-44ea-a5e3-68908510b08e', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
+                        sh "echo '${PASSWORD}' | docker login --username=${USERNAME} --password-stdin ${DOCKER_REGISTRY}"
+                        sh "docker push ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/${IMAGE_NAME}:${IMAGE_TAG}"
+                    }
+                }
+            }
+        }
+    }
