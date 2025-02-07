@@ -1,48 +1,50 @@
+{
 pipeline {
-    agent any
-
-    environment {
-        ACR_REGISTRY = "registry-intl.ap-southeast-5.aliyuncs.com/gandes-test/gandes-repo"
-        ACR_REPO = "gandes-repo/my-app"
-        ACR_CREDENTIALS = credentials('acr-credentials')
-        KUBECONFIG = credentials('kubeconfig')
-    }
-
-    stages {
-        stage('Checkout') {
-            steps {
-                git 'https://github.com/febriyandi-source/gandes-repo.git'
+   agent any
+      environment {
+         registryCredential = 'gitali'
+         registryCredentialAli = 'containerali'
+         registry = 'registry-intl-vpc.ap-southeast-5.aliyuncs.com/gandes-test/gandes-repo'
+         registryUrl = 'https://registry-intl-vpc.ap-southeast-5.aliyuncs.com/gandes-test/gandes-repo'
+         dockerImage = ''
+      }
+   options {
+      skipDefaultCheckout(true)
+   }
+   stages {
+      stage('Checkout SCM') {
+         steps {
+            echo '> Checking out the source control ...'
+            checkout scm
+         }
+      }
+      stage('List Git Files') {
+         steps {
+            echo '> List the File ...'
+            sh 'ls -l'    
+         }
+      }
+      stage('Build') {
+         steps {
+           echo '> Build Image ...'
+           script {
+               dockerImage = docker.build registry + ":$BUILD_NUMBER"
+           }
+         }
+      }
+      stage('Deploy Image') {
+         steps{
+            script {
+               docker.withRegistry( registryUrl, registryCredentialAli) {
+               dockerImage.push()
+               }
             }
-        }
-
-        stage('Build Docker Image') {
-            steps {
-                script {
-                    docker.build("${ACR_REGISTRY}/${ACR_REPO}:${env.BUILD_ID}")
-                }
-            }
-        }
-
-        stage('Push Docker Image') {
-            steps {
-                script {
-                    docker.withRegistry("https://${ACR_REGISTRY}", ACR_CREDENTIALS) {
-                        docker.image("${ACR_REGISTRY}/${ACR_REPO}:${env.BUILD_ID}").push()
-                    }
-                }
-            }
-        }
-
-        stage('Deploy to ACK') {
-            steps {
-                script {
-                    withKubeConfig([credentialsId: 'kubeconfig']) {
-                        sh '''
-                        kubectl set image deployment/my-app my-app=${ACR_REGISTRY}/${ACR_REPO}:${env.BUILD_ID}
-                        '''
-                    }
-                }
-            }
-        }
-    }
+         }
+      }
+      stage('Remove Unused docker image') {
+         steps{
+           sh "docker rmi -f $registry:$BUILD_NUMBER"
+         }
+      }
+   }
 }
